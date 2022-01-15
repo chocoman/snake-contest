@@ -4,182 +4,192 @@ from random import randint, shuffle
 from datetime import *
 import os
 
-def minus_hracovy_body(hrac):
+def minus_players_points(player):
     # pro razeni. Radime sestupne podle bodu.
     # V pripade rovnosti vzestupne podle jmena.
-    return (-hrac.body, hrac.jmeno) 
+    return (-player.points, player.name) 
 
-class ap:
-  def __init__(self, vel, vyska, sirka, prodleva):
-    self.vel = vel
-    self.sirka = sirka
-    self.vyska = vyska
-    self.prodleva = prodleva
-    self.okno = Tk()
-    self.okno.title("snake")
-    self.platno=Canvas(self.okno,
-                       width=(self.sirka+1)*self.vel,
-                       height=(self.vyska+1)*self.vel,
-                       bg="black")
-    self.platno.pack()
-    self.klavesy = []
-    self.okno.bind("<KeyPress>", self.stisk)
-    self.okno.bind("<KeyRelease>",self.pusteni)
-    
-    self.konec = False
-    self.hadi = []
-    self.mrtvi = []
-    self.jidlo = []
-    self.vyrob_jidlo()
-    self.kolo = 0
+class SnakeGame:
+  def __init__(self, field_size, height, width, delay):
+    self.field_size = field_size
+    self.width = width
+    self.height = height
+    self.delay = delay
+    self.window = Tk()
+    self.window.title('snake')
+    self.canvas=Canvas(
+      self.window,
+      width = (self.width + 1) * self.field_size,
+      height = (self.height + 1) * self.field_size,
+      bg = '#000000'
+    )
+    self.canvas.pack()
+    self.keys = []
+    self.window.bind('<KeyPress>', self.key_press)
+    self.window.bind('<KeyRelease>',self.key_release)
 
-  def pridej_hada(self,had):
-    self.hadi.append(had)
+    self.game_ended = False
+    self.snakes = []
+    self.dead = []
+    self.food = []
+    self.create_food()
+    self.round = 0
 
-  def vyrob_jidlo(self):
-    x = randint(0,self.sirka)
-    y = randint(0,self.vyska)
-    if (self.obsazeno(x,y)):
-      self.vyrob_jidlo()
+  def add_snake(self, had):
+    self.snakes.append(had)
+
+  def create_food(self):
+    x = randint(0, self.width)
+    y = randint(0, self.height)
+    if (self.occupied(x, y)):
+      self.create_food()
       return
-    self.jidlo.append([x,y])
+    self.food.append([x, y])
     
-  def stisk(self,udalost):
-    if not udalost.keysym in self.klavesy:
-      self.klavesy.append(udalost.keysym)
-    for had in self.hadi:
-      had.zmena_smeru(self.klavesy)        
+  def key_press(self, event):
+    if not event.keysym in self.keys:
+      self.keys.append(event.keysym)
+    for snake in self.snakes:
+      snake.zmena_smeru(self.keys)
 
-  def pusteni(self,udalost):
-    self.klavesy.remove(udalost.keysym)
+  def key_release(self, event):
+    self.keys.remove(event.keysym)
 
-  def vyhodnot_stav(self):
-    self.konec = False
-    for had in self.hadi:
-      if (had.body < -30):
-        print("vyrazen hrac: " + str(had.jmeno))
-        self.hadi.remove(had)
-        had.smrt()
-        self.mrtvi.append(had)
-      if (had.body > 30):
-        self.konec = True
-    if (len(self.hadi) <= 1):
-      self.konec = True
-    if (self.konec):
+  def evaluate_state(self):
+    self.game_ended = False
+    for snake in self.snakes:
+      if (snake.points < -30):
+        print('vyrazen hrac: ' + str(snake.name))
+        self.snakes.remove(snake)
+        snake.smrt()
+        self.dead.append(snake)
+      if (snake.points > 30):
+        self.game_ended = True
+    if (len(self.snakes) <= 1):
+      self.game_ended = True
+    if (self.game_ended):
       if not os.path.exists('vysledky'):
         os.makedirs('vysledky')
-      jmeno_souboru = "vysledky/vysledek" + str(datetime.now().strftime("%Y-%m-%d_%H_%M_%S")) + ".txt"
-      with open(jmeno_souboru,"w") as file:
-        file.write(jmeno_souboru + "\n")
-        for had in self.mrtvi:
-          file.write(str(had.jmeno) + ": " + str(had.body) + "\n")
-        for had in self.hadi:
-          file.write(str(had.jmeno) + ": " + str(had.body) + "\n")
-          print(str(had.jmeno) + ": " + str(had.body))
-        print("Konec hry. Vysledek zapsan do " + jmeno_souboru)
+      file_name = 'vysledky/vysledek' + str(datetime.now().strftime('%Y-%m-%d_%H_%M_%S')) + '.txt'
+      with open(file_name,'w') as file:
+        file.write(file_name + '\n')
+        for snake in self.dead:
+          file.write(str(snake.name) + ': ' + str(snake.points) + '\n')
+        for snake in self.snakes:
+          file.write(str(snake.name) + ': ' + str(snake.points) + '\n')
+          print(str(snake.name) + ': ' + str(snake.points))
+        print('Konec hry. Vysledek zapsan do ' + file_name)
 
   def akce(self):
-    self.kolo = self.kolo + 1
-    shuffle(self.hadi) # pohyb hadu se vyhodnoti v nahodnem poradi
-    for had in self.hadi:
-      had.akce()
-    self.vyhodnot_stav()
-    self.platno.delete(ALL) 
-    for had in self.hadi:
-      had.vykresli()
-    self.vykresli_jidlo()
-    self.vykresli_stav()
-    for had in self.hadi:
-      if(isinstance(had,hrac_AI)):
-        had.update(self.hadi)
+    self.round = self.round + 1
+    shuffle(self.snakes) # pohyb hadu se vyhodnoti v nahodnem poradi
+    for snake in self.snakes:
+      snake.akce()
+    self.evaluate_state()
+    self.rerender()
+    for snake in self.snakes:
+      if(isinstance(snake, player_AI)):
+        snake.update(self.snakes)
 
-    if (not self.konec):
-      self.okno.after(self.prodleva, self.akce)
-  
-  def vykresli_jidlo(self):
-    for souradnice in self.jidlo:
-      x = souradnice[0]
-      y = souradnice[1]
-      vel = self.vel
-      self.platno.create_rectangle(x * vel, y * vel,
-                                   (x+1) * vel, (y + 1) * vel,
-                                   fill="#eeee88")
+    if (not self.game_ended):
+      self.window.after(self.delay, self.akce)
 
-  def vykresli_stav(self):
-    self.hadi.sort(key = minus_hracovy_body)
-    for i in range(len(self.hadi)):
-      had = self.hadi[i]
-      self.platno.create_text(20, (i + 1) * self.vel, text= str(had.jmeno) + " " + str(had.body), fill=had.barva)
+  def rerender(self):
+    self.canvas.delete(ALL)
+    for snake in self.snakes:
+      snake.render_snake()
+    self.render_food()
+    self.render_state()
 
-  def obsazeno(self, x, y):
-    if x >= self.sirka:
+  def render_food(self):
+    for coordinates in self.food:
+      x = coordinates[0]
+      y = coordinates[1]
+      field_size = self.field_size
+      self.canvas.create_rectangle(x * field_size, y * field_size,
+                                   (x+1) * field_size, (y + 1) * field_size,
+                                   fill='#eeee88')
+
+  def render_state(self):
+    self.snakes.sort(key = minus_players_points)
+    for i in range(len(self.snakes)):
+      snake = self.snakes[i]
+      self.canvas.create_text(
+        20,
+        (i + 1) * self.field_size,
+        text = str(snake.name) + ' ' + str(snake.points),
+        fill=snake.barva,
+      )
+
+  def occupied(self, x, y):
+    if x >= self.width:
       return True
     if x < 0:
       return True
-    if y >= self.vyska:
+    if y >= self.height:
       return True
     if y < 0:
       return True
-    for had in self.hadi:
-      for clanek in had.ocas:
+    for snake in self.snakes:
+      for clanek in snake.tail:
         if (clanek == [x,y]):
           return True
     return False
 
-class hrac(object):
-  def __init__(self,aplikace, delka, barva, jmeno, klavesy_pohyb):
-    self.a = aplikace
+class player(object):
+  def __init__(self, app, delka, barva, name, klavesy_pohyb):
+    self.a = app
     self.delka = delka
     self.barva=barva
-    self.jmeno=jmeno
-    self.klavesy_pohyb = klavesy_pohyb
-    self.body = 0
-    self.cas_smrti = -1
+    self.name=name
+    self.keys_pohyb = klavesy_pohyb
+    self.points = 0
+    self.time_of_death = -1
     self.ozivit()
 
   def kolize(self):
-    self.body = self.body - 10
+    self.points = self.points - 10
     self.ozivit()
 
   def pohyb(self,smer):
-    if smer == 0 and self.x < self.a.sirka:        # doprava
+    if smer == 0 and self.x < self.a.width:        # doprava
       self.x = self.x + 1
     elif smer == 1 and self.y > 0:                 # nahoru
       self.y = self.y - 1
     elif smer == 2 and self.x > 0:                 # doleva
       self.x = self.x - 1
-    elif smer == 3 and self.y < self.a.vyska:      # dolu
+    elif smer == 3 and self.y < self.a.height:      # dolu
       self.y = self.y + 1
     else:
       self.kolize()
       return
-    if (self.a.obsazeno(self.x,self.y)):
+    if (self.a.occupied(self.x,self.y)):
       self.kolize()
-    self.ocas.append([self.x,self.y])
-    for i in range(len(self.a.jidlo)):
-      clanek = self.a.jidlo[i]
+    self.tail.append([self.x,self.y])
+    for i in range(len(self.a.food)):
+      clanek = self.a.food[i]
       if (clanek == [self.x,self.y]):
-        self.snedeno_jidlo(i)
+        self.food_eaten(i)
         return
-    while(len(self.ocas) > self.delka):
-      self.ocas.pop(0) 
+    while(len(self.tail) > self.delka):
+      self.tail.pop(0) 
 
-  def snedeno_jidlo(self,i):
+  def food_eaten(self,i):
     self.delka = self.delka + 3
-    self.body = self.body + 1
-    self.a.jidlo.pop(i)
-    self.a.vyrob_jidlo()
+    self.points = self.points + 1
+    self.a.food.pop(i)
+    self.a.create_food()
   
   def ozivit(self):
-    self.x=randint(0, self.a.sirka)
-    self.y=randint(0, self.a.vyska)
+    self.x=randint(0, self.a.width)
+    self.y=randint(0, self.a.height)
     self.smer=randint(0, 3)
-    self.ocas = [[self.x, self.y]]
+    self.tail = [[self.x, self.y]]
     self.delka = 5
 
   def zmena_smeru(self, klavesy):
     for i in range(4):
-        if (self.klavesy_pohyb[i] in klavesy):
+        if (self.keys_pohyb[i] in klavesy):
           self.smer = i
     print (self.smer)
 
@@ -187,26 +197,26 @@ class hrac(object):
     self.pohyb(self.smer)
   
   def smrt(self):
-    self.cas_smrti = self.a.kolo
+    self.time_of_death = self.a.round
 
-  def vykresli(self):
-    for souradnice in self.ocas:
-      x = souradnice[0]
-      y = souradnice[1]
-      vel = self.a.vel
-      self.a.platno.create_rectangle(x * vel, y * vel,
+  def render_snake(self):
+    for coordinates in self.tail:
+      x = coordinates[0]
+      y = coordinates[1]
+      vel = self.a.field_size
+      self.a.canvas.create_rectangle(x * vel, y * vel,
                                      (x + 1) * vel,(y + 1) * vel,
                                      fill = self.barva)
 
-class hrac_AI(hrac):
-  def __init__(self,aplikace, delka, barva, jmeno, klavesy, ai):
-    hrac.__init__(self,aplikace, delka, barva, jmeno, klavesy)
+class player_AI(player):
+  def __init__(self,aplikace, delka, barva, name, klavesy, ai):
+    player.__init__(self,aplikace, delka, barva, name, klavesy)
     self.ai = ai
 
   def zmena_smeru(self, klavesy):
     for i in range(4):
-        if (self.klavesy_pohyb[i] in klavesy):
+        if (self.keys_pohyb[i] in klavesy):
           self.smer = i
 
-  def update(self, hadi):
-      self.smer = self.ai.novy_smer(self,hadi)
+  def update(self, snakes):
+      self.smer = self.ai.novy_smer(self, snakes)
