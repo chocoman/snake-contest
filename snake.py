@@ -26,22 +26,22 @@ class SnakeGame:
     self.canvas.pack()
     self.keys = []
     self.window.bind('<KeyPress>', self.key_press)
-    self.window.bind('<KeyRelease>',self.key_release)
+    self.window.bind('<KeyRelease>', self.key_release)
 
     self.game_ended = False
     self.snakes = []
     self.dead = []
     self.food = []
     self.create_food()
-    self.round = 0
+    self.turn_number = 0
 
-  def add_snake(self, had):
-    self.snakes.append(had)
+  def add_snake(self, snake):
+    self.snakes.append(snake)
 
   def create_food(self):
     x = randint(0, self.width)
     y = randint(0, self.height)
-    if (self.occupied(x, y)):
+    if (self.is_occupied(x, y)):
       self.create_food()
       return
     self.food.append([x, y])
@@ -81,7 +81,7 @@ class SnakeGame:
         print('Konec hry. Vysledek zapsan do ' + file_name)
 
   def akce(self):
-    self.round = self.round + 1
+    self.turn_number = self.turn_number + 1
     shuffle(self.snakes) # pohyb hadu se vyhodnoti v nahodnem poradi
     for snake in self.snakes:
       snake.akce()
@@ -97,7 +97,7 @@ class SnakeGame:
   def rerender(self):
     self.canvas.delete(ALL)
     for snake in self.snakes:
-      snake.render_snake()
+      self.render_snake(snake)
     self.render_food()
     self.render_state()
 
@@ -118,10 +118,21 @@ class SnakeGame:
         20,
         (i + 1) * self.field_size,
         text = str(snake.name) + ' ' + str(snake.points),
-        fill=snake.barva,
+        fill=snake.color,
       )
 
-  def occupied(self, x, y):
+  def render_snake(self, snake):
+    for coordinates in snake.tail:
+      x = coordinates[0]
+      y = coordinates[1]
+      size = self.field_size
+      self.canvas.create_rectangle(
+        x * size, y * size,
+        (x + 1) * size, (y + 1) * size,
+        fill = snake.color,
+      )
+
+  def is_occupied(self, x, y):
     if x >= self.width:
       return True
     if x < 0:
@@ -136,22 +147,22 @@ class SnakeGame:
           return True
     return False
 
-class player(object):
-  def __init__(self, app, delka, barva, name, klavesy_pohyb):
+class Snake(object):
+  def __init__(self, app, length, color, name, klavesy_pohyb):
     self.a = app
-    self.delka = delka
-    self.barva=barva
+    self.length = length
+    self.color=color
     self.name=name
     self.keys_pohyb = klavesy_pohyb
     self.points = 0
     self.time_of_death = -1
-    self.ozivit()
+    self.revive()
 
-  def kolize(self):
+  def collision(self):
     self.points = self.points - 10
-    self.ozivit()
+    self.revive()
 
-  def pohyb(self,smer):
+  def move(self,smer):
     if smer == 0 and self.x < self.a.width:        # doprava
       self.x = self.x + 1
     elif smer == 1 and self.y > 0:                 # nahoru
@@ -161,31 +172,31 @@ class player(object):
     elif smer == 3 and self.y < self.a.height:      # dolu
       self.y = self.y + 1
     else:
-      self.kolize()
+      self.collision()
       return
-    if (self.a.occupied(self.x,self.y)):
-      self.kolize()
+    if (self.a.is_occupied(self.x,self.y)):
+      self.collision()
     self.tail.append([self.x,self.y])
     for i in range(len(self.a.food)):
       clanek = self.a.food[i]
       if (clanek == [self.x,self.y]):
         self.food_eaten(i)
         return
-    while(len(self.tail) > self.delka):
+    while(len(self.tail) > self.length):
       self.tail.pop(0) 
 
   def food_eaten(self,i):
-    self.delka = self.delka + 3
+    self.length = self.length + 3
     self.points = self.points + 1
     self.a.food.pop(i)
     self.a.create_food()
   
-  def ozivit(self):
+  def revive(self):
     self.x=randint(0, self.a.width)
     self.y=randint(0, self.a.height)
     self.smer=randint(0, 3)
     self.tail = [[self.x, self.y]]
-    self.delka = 5
+    self.length = 5
 
   def zmena_smeru(self, klavesy):
     for i in range(4):
@@ -194,23 +205,14 @@ class player(object):
     print (self.smer)
 
   def akce(self):
-    self.pohyb(self.smer)
+    self.move(self.smer)
   
   def smrt(self):
-    self.time_of_death = self.a.round
+    self.time_of_death = self.a.turn_number
 
-  def render_snake(self):
-    for coordinates in self.tail:
-      x = coordinates[0]
-      y = coordinates[1]
-      vel = self.a.field_size
-      self.a.canvas.create_rectangle(x * vel, y * vel,
-                                     (x + 1) * vel,(y + 1) * vel,
-                                     fill = self.barva)
-
-class player_AI(player):
-  def __init__(self,aplikace, delka, barva, name, klavesy, ai):
-    player.__init__(self,aplikace, delka, barva, name, klavesy)
+class Snake_AI(Snake):
+  def __init__(self,aplikace, length, color, name, klavesy, ai):
+    Snake.__init__(self,aplikace, length, color, name, klavesy)
     self.ai = ai
 
   def zmena_smeru(self, klavesy):

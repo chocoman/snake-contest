@@ -15,13 +15,13 @@ class ai_Spanel_random2:
     volne_smery = []
     x = had.x
     y = had.y
-    if (not self.a.occupied(x+1,y)):
+    if (not self.a.is_occupied(x+1,y)):
       volne_smery.append(0)
-    if (not self.a.occupied(x,y-1)):
+    if (not self.a.is_occupied(x,y-1)):
       volne_smery.append(1)
-    if (not self.a.occupied(x-1,y)):
+    if (not self.a.is_occupied(x-1,y)):
       volne_smery.append(2)
-    if (not self.a.occupied(x,y+1)):
+    if (not self.a.is_occupied(x,y+1)):
       volne_smery.append(3)
     shuffle(volne_smery)
     if (len(volne_smery) == 0):
