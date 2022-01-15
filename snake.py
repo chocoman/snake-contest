@@ -3,6 +3,9 @@ from tkinter import *
 from random import randint, shuffle
 from datetime import *
 import os
+import traceback
+
+from direction import RIGHT, UP, LEFT, DOWN, direction_as_string
 
 class Board:
   def __init__(self, height, width):
@@ -19,25 +22,29 @@ class Board:
     self.snakes.append(snake)
 
   def create_food(self):
-    x = randint(0, self.width - 1)
-    y = randint(0, self.height - 1)
-    if (self.is_occupied(x, y)):
+    col = randint(0, self.width - 1)
+    row = randint(0, self.height - 1)
+    if (self.is_occupied(row, col)):
       self.create_food()
       return
-    self.food.append([x, y])
+    self.food.append([row, col])
+    print(f'new food at {(row, col)}')
 
   def evaluate_state(self):
     self.game_ended = False
     for snake in self.snakes:
       if (snake.points < -30):
-        print('vyrazen hrac: ' + str(snake.name))
+        print(f'Player {snake.name} lost because they are below -30 points')
         self.snakes.remove(snake)
-        snake.smrt()
+        snake.death()
         self.dead.append(snake)
       if (snake.points > 30):
+        print(f'Game ended because {snake.name} reached 30 points.')
         self.game_ended = True
-    if (len(self.snakes) <= 1):
+    if (len(self.snakes) == 0):
+      print(f'Game ended because all snakes died.')
       self.game_ended = True
+
     if (self.game_ended):
       self.write_summary()
 
@@ -56,27 +63,46 @@ class Board:
 
   def update(self):
     self.turn_number = self.turn_number + 1
-    shuffle(self.snakes) # pohyb hadu se vyhodnoti v nahodnem poradi
-    for snake in self.snakes:
-      snake.akce()
+    # All snakes move in random order based on their decision from before.
+    execution_order = list(range(len(self.snakes)))
+    shuffle(execution_order)
+    for i in execution_order:
+      self.snakes[i].action()
     self.evaluate_state()
+    # All all snakes decide what to do in next round.
     for snake in self.snakes:
-      if(isinstance(snake, Snake_AI)):
-        snake.update(self.snakes)
+      if(isinstance(snake, BotSnake)):
+        snake.update(self.export_fields(snake))
 
+  def export_fields(self, focused_snake):
+    fields = []
+    for i in range(self.height):
+      row = []
+      for j in range(self.width):
+        row.append('')
+      fields.append(row)
+    for snake in self.snakes:
+      for i in range(len(snake.tail)):
+        row, col = snake.tail[i]
+        fields[row][col] = f'{i}-{snake.name}'
+    for row, col in self.food:
+      fields[row][col] = 'f'
+    head_row, head_col = focused_snake.tail[0]
+    fields[head_row][head_col] = 'h'
+    return fields
 
-  def is_occupied(self, x, y):
-    if x >= self.width:
+  def is_occupied(self, row, col):
+    if col >= self.width:
       return True
-    if x < 0:
+    if col < 0:
       return True
-    if y >= self.height:
+    if row >= self.height:
       return True
-    if y < 0:
+    if row < 0:
       return True
     for snake in self.snakes:
-      for clanek in snake.tail:
-        if (clanek == [x,y]):
+      for field in snake.tail:
+        if (field == [row, col]):
           return True
     return False
 
@@ -90,8 +116,8 @@ class SnakeGame:
     self.window.title('snake')
     self.canvas=Canvas(
       self.window,
-      width = (self.width + 1) * self.field_size,
-      height = (self.height + 1) * self.field_size,
+      width = (self.width) * self.field_size,
+      height = (self.height) * self.field_size,
       bg = '#000000'
     )
     self.canvas.pack()
@@ -102,23 +128,30 @@ class SnakeGame:
     self.board = Board(height, width)
 
   def start(self):
+    print('Starting game')
     self.update_loop()
+    mainloop()
+
 
   def update_loop(self):
-    print('update')
     self.board.update()
     self.rerender()
     if (not self.board.game_ended):
       self.window.after(self.delay, self.update_loop)
 
-  def add_snake(self, snake):
+  def add_human_player(self, name, color, controls):
+    snake = Snake(self.board, 5, color, name, control_keys=controls)
+    self.board.add_snake(snake)
+
+  def add_ai_player(self, name, color, ai):
+    snake = BotSnake(self.board, 5, color, name, ai)
     self.board.add_snake(snake)
 
   def key_press(self, event):
     if not event.keysym in self.keys:
       self.keys.append(event.keysym)
-    for snake in self.snakes:
-      snake.zmena_smeru(self.keys)
+    for snake in self.board.snakes:
+      snake.handle_key_pressed(self.keys)
 
   def key_release(self, event):
     self.keys.remove(event.keysym)
@@ -132,12 +165,12 @@ class SnakeGame:
 
   def render_food(self):
     for coordinates in self.board.food:
-      x, y = coordinates
+      row, col = coordinates
       field_size = self.field_size
       self.canvas.create_rectangle(
-        x * field_size,
-        y * field_size,
-        (x+1) * field_size, (y + 1) * field_size,
+        col * field_size,
+        row * field_size,
+        (col+1) * field_size, (row + 1) * field_size,
         fill='#eeee88',
       )
 
@@ -156,89 +189,94 @@ class SnakeGame:
       )
 
   def render_snake(self, snake):
-    for coordinates in snake.tail:
-      x = coordinates[0]
-      y = coordinates[1]
+    for row, col in snake.tail:
       size = self.field_size
       self.canvas.create_rectangle(
-        x * size, y * size,
-        (x + 1) * size, (y + 1) * size,
+        col * size, row * size,
+        (col + 1) * size, (row + 1) * size,
         fill = snake.color,
       )
 
 
 class Snake(object):
-  def __init__(self, board, length, color, name, klavesy_pohyb):
+  def __init__(self, board, length, color, name, control_keys=[None, None, None, None]):
     self.board = board
     self.length = length
     self.color=color
     self.name=name
-    self.keys_pohyb = klavesy_pohyb
+    self.control_keys = control_keys
     self.points = 0
     self.time_of_death = -1
     self.revive()
 
   def collision(self):
+    print(f'{self.name} collided. -10 points.')
     self.points = self.points - 10
     self.revive()
 
-  def move(self,smer):
-    if smer == 0 and self.x < self.board.width:        # doprava
-      self.x = self.x + 1
-    elif smer == 1 and self.y > 0:                 # nahoru
-      self.y = self.y - 1
-    elif smer == 2 and self.x > 0:                 # doleva
-      self.x = self.x - 1
-    elif smer == 3 and self.y < self.board.height:      # dolu
-      self.y = self.y + 1
+  def move(self, direction):
+    if direction == RIGHT and self.col < self.board.width - 1:
+      self.col = self.col + 1
+    elif direction == UP and self.row > 0:
+      self.row = self.row - 1
+    elif direction == LEFT and self.col > 0:
+      self.col = self.col - 1
+    elif direction == DOWN and self.row < self.board.height - 1:
+      self.row = self.row + 1
     else:
       self.collision()
       return
-    if (self.board.is_occupied(self.x,self.y)):
+    if (self.board.is_occupied(self.row, self.col)):
       self.collision()
-    self.tail.append([self.x,self.y])
+      return
+    self.tail.insert(0, [self.row, self.col])
     for i in range(len(self.board.food)):
-      clanek = self.board.food[i]
-      if (clanek == [self.x,self.y]):
+      field = self.board.food[i]
+      if (field == [self.row, self.col]):
         self.food_eaten(i)
         return
     while(len(self.tail) > self.length):
-      self.tail.pop(0) 
+      self.tail.pop()
 
   def food_eaten(self,i):
     self.length = self.length + 3
     self.points = self.points + 1
+    print(f'{self.name} ate food. +1 point.')
+
     self.board.food.pop(i)
     self.board.create_food()
   
   def revive(self):
-    self.x=randint(0, self.board.width)
-    self.y=randint(0, self.board.height)
-    self.smer=randint(0, 3)
-    self.tail = [[self.x, self.y]]
+    self.col = randint(0, self.board.width - 1)
+    self.row = randint(0, self.board.height - 1)
+    self.direction = randint(0, 3)
+    if (self.board.is_occupied(self.row, self.col)):
+      self.revive()
+      return
+    self.tail = [[self.row, self.col]]
     self.length = 5
 
-  def zmena_smeru(self, klavesy):
+  def handle_key_pressed(self, keys):
     for i in range(4):
-        if (self.keys_pohyb[i] in klavesy):
-          self.smer = i
-    print (self.smer)
+        if (self.control_keys[i] in keys):
+          self.direction = i
 
-  def akce(self):
-    self.move(self.smer)
+  def action(self):
+    self.move(self.direction)
   
-  def smrt(self):
+  def death(self):
     self.time_of_death = self.board.turn_number
 
-class Snake_AI(Snake):
-  def __init__(self, board, length, color, name, klavesy, ai):
-    Snake.__init__(self, board, length, color, name, klavesy)
+class BotSnake(Snake):
+  def __init__(self, board, length, color, name, ai):
+    Snake.__init__(self, board, length, color, name)
     self.ai = ai
 
-  def zmena_smeru(self, klavesy):
-    for i in range(4):
-        if (self.keys_pohyb[i] in klavesy):
-          self.smer = i
-
-  def update(self, snakes):
-      self.smer = self.ai.novy_smer(self, snakes)
+  def update(self, board):
+      print(f'{self.name} is deciding...')
+      try:
+        self.direction = self.ai.decide_direction(board)
+      except Exception as e:
+        print(f'{self.name} crashed when deciding.')
+        print(traceback.format_exc())
+      print(f'{self.name} decided: {direction_as_string(self.direction)}')

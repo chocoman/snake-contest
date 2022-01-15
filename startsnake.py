@@ -1,15 +1,9 @@
-from snake import SnakeGame, Snake_AI
-from random import randint
-from Spanel import *
-from tkinter import mainloop
+from snake import SnakeGame
+from participants import spanel
 
-a = SnakeGame(20,20,30,100)
-h1 = Snake_AI(a.board, 5, "#0000ff","h1",["Right","Up","Left","Down"],ai_Spanel_random2(a.board))
-#h1 = snake.hrac(a, 5, "#bbff00","h2",["d","w","a","s"])
-h2 = Snake_AI(a.board, 5, "#ff0000","h2",["d","w","a","s"],ai_Spanel_random2(a.board))
-a.add_snake(h1)
-a.add_snake(h2)
-print("zacatek hry")
-a.start()
-mainloop()
+game = SnakeGame(20, 20, 30, 100)
+#game.add_human_player('Human 1', '#bbff00', ['d','w','a','s'])
+game.add_ai_player('Bot Spanel 1', '#ff0000', spanel.AI())
+game.add_ai_player('Bot Spanel 2', '#ffffff', spanel.AI())
+game.start()
 
