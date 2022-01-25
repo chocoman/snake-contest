@@ -22,39 +22,63 @@ class AI:
     else: return False
 
   def is_free_further(self, row, col, direction=None):
-    if direction == LEFT: col -= 2
-    elif direction == UP: row -= 2
-    elif direction == RIGHT: col += 2
-    elif direction == DOWN: row += 2
+    if self.is_free(row, col, direction) == False:
+      return False
+
+    else:
+      if direction == LEFT: col -= 2
+      elif direction == UP: row -= 2
+      elif direction == RIGHT: col += 2
+      elif direction == DOWN: row += 2
+
+      if row >= self.height: return False
+      if row < 0: return False
+      if col >= self.width: return False
+      if col < 0: return False
+
+      if self.fields[row][col] == '': return True
+      if self.fields[row][col] == 'f': return True
+      else: return False
+
+  def check_food_next_to_wall(self, width, height, row, col, direction=None):
+    width += 1
+    height += 1
+
+    if direction == LEFT:col -= 1
+    elif direction == UP: row -= 1
+    elif direction == RIGHT: col += 1
+    elif direction == DOWN: row += 1
 
     if row >= self.height: return False
     if row < 0: return False
     if col >= self.width: return False
     if col < 0: return False
+    if self.fields[row][col] != 'f': return False
 
-    if self.fields[row][col] == '': return True
-    if self.fields[row][col] == 'f': return True
-    else: return False
+    if direction == LEFT: col -= 1
+    elif direction == UP: row -= 1
+    elif direction == RIGHT: col += 1
+    elif direction == DOWN: row += 1
+
+    if row >= self.height: return False
+    if row < 0: return False
+    if col >= self.width: return False
+    if col < 0: return False
+    if self.fields[row] == -1 or width: return True
+    if self.fields[col] == -1 or height: return True
+
+
 
   def random_safe_direction(self, head_row, head_col):
-    if self.is_free(head_row, head_col, UP):
-      return UP
     if self.is_free(head_row, head_col, LEFT):
       return LEFT
-    if self.is_free(head_row, head_col, DOWN):
-      return DOWN
+    if self.is_free(head_row, head_col, UP):
+      return UP
     if self.is_free(head_row, head_col, RIGHT):
       return RIGHT
+    if self.is_free(head_row, head_col, DOWN):
+      return DOWN
 
-  # Funkce dostane seznam seznamů stringů fields. Záznam fields[i][j] říká,
-  # co je na políčku na řádku i ve sloupci j. Možné hodoty jsou 'f', což značí jídlo,
-  # prázdný string '' což značí prázdné pole, 'h' značí hlavu hada, pro nějž se rozhodujete
-  # a cokoli dalšího znamená tělo nějakého hada. To je záznam ve formátu '4-arnost'.
-  # Číslo před pomlčkou značí, o kolikátý díl těla se jedná (hlava je 0) a zbytek za pomlčkou
-  # je jméno daného hada.
-  # Tuto funkci můžete libovolně upravit. Jenom zachovejte její název a vstupní parametry
-  # a vracejte jedině jednu z hodnot LEFT, UP, RIGHT, DOWN
-  # Můžete přidat jakékoli další funkce.
   def decide_direction(self, fields):
     self.fields = fields
     self.height = len(fields)
@@ -68,13 +92,27 @@ class AI:
         if fields[i][j] == 'h':
           head_row, head_col = i, j
 
-    if food_row < head_row and self.is_free(head_row, head_col, UP) and self.is_free_further(head_row, head_col, UP):
-      return UP
-    elif food_col < head_col and self.is_free(head_row, head_col, LEFT) and self.is_free_further(head_row, head_col, LEFT):
+    if food_col < head_col and self.is_free_further(head_row, head_col, LEFT):
       return LEFT
-    elif food_row > head_row and self.is_free(head_row, head_col, DOWN) and self.is_free_further(head_row, head_col, DOWN):
-      return DOWN
-    elif food_col > head_col and self.is_free(head_row, head_col, RIGHT) and self.is_free_further(head_row, head_col, RIGHT):
+    elif food_row < head_row and self.is_free_further(head_row, head_col, UP):
+      return UP
+    elif food_col > head_col and self.is_free_further(head_row, head_col, RIGHT):
       return RIGHT
+    elif food_row > head_row and self.is_free_further(head_row, head_col, DOWN):
+      return DOWN
+
+    if food_col < head_col:
+      if self.check_food_next_to_wall(self.width, self.height, head_row, head_col, LEFT):
+        return LEFT
+    if food_row < head_row:
+      if self.check_food_next_to_wall(self.width, self.height, head_row, head_col, UP):
+        return UP
+    if food_col > head_col:
+      if self.check_food_next_to_wall(self.width, self.height, head_row, head_col, RIGHT):
+        return RIGHT
+    if food_row > head_row:
+      if self.check_food_next_to_wall(self.width, self.height, head_row, head_col, DOWN):
+        return DOWN
+
     
     return self.random_safe_direction(head_row, head_col)

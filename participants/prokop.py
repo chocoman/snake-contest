@@ -1,12 +1,11 @@
 from direction import LEFT, UP, RIGHT, DOWN
-from participants import martin, filip
 
 class AI:
   def __init__(self):
     self.fields = [['']]
     self.height = 1
     self.width = 1
-    
+
   def is_free(self, row, col, direction=None):
     if direction == LEFT: col -= 1
     elif direction == UP: row -= 1
@@ -37,26 +36,27 @@ class AI:
     self.width = len(fields[0])
     head_row, head_col = 0, 0
     food_row, food_col = 0, 0
+    snake_head_row, snake_head_col = 0,0
     for i in range(self.height):
       for j in range(self.width):
         if fields[i][j] == 'f':
           food_row, food_col = i, j
-        if fields[i][j] == 'h':
+        elif fields[i][j] == 'h':
           head_row, head_col = i, j
-    print(fields)
-    self.participants_counter(fields)
-    if self.participants_counter == "evade":
-      if self.is_free(head_row, head_col, UP):
+        elif fields[i][j].startswith("0"):
+          if (self.distance(head_row, head_col, snake_head_row, snake_head_col) < self.distance(i, j, snake_head_row, snake_head_col)):
+            snake_head_row, snake_head_col = i, j
+    if (self.distance(head_row, head_col, snake_head_row, snake_head_col) < 10):
+      print("aaa")
+      if snake_head_row < head_row and self.is_free(head_row, head_col, UP):
         return UP
-      elif self.is_free(head_row, head_col, LEFT):
+      elif snake_head_col < head_col and self.is_free(head_row, head_col, LEFT):
         return LEFT
-      elif self.is_free(head_row, head_col, DOWN):
+      elif snake_head_row > head_row and self.is_free(head_row, head_col, DOWN):
         return DOWN
-      elif self.is_free(head_row, head_col, RIGHT):
+      elif snake_head_col > head_col and self.is_free(head_row, head_col, RIGHT):
         return RIGHT
-      print('PANIC!!!')
-      return LEFT
-    else:
+    else:      
       if food_row < head_row and self.is_free(head_row, head_col, UP):
         return UP
       elif food_col < head_col and self.is_free(head_row, head_col, LEFT):
@@ -65,14 +65,8 @@ class AI:
         return DOWN
       elif food_col > head_col and self.is_free(head_row, head_col, RIGHT):
         return RIGHT
-      print('PANIC!!!')
-      return LEFT
-  def participants_counter(self,fields):
-    remaining = 0
-    for x in fields:
-      if x[0] == "0":
-        remaining+=1
-    if remaining > 2:
-      return "evade"
-    else:
-      return "go"
+    print('PANIC!!!')
+    return LEFT
+  def distance(self, a_row, a_col, b_row, b_col):
+    return ((a_row - b_row)**2 + (a_col-b_col)**2)**0.5
+

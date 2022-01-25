@@ -1,12 +1,11 @@
 from direction import LEFT, UP, RIGHT, DOWN
-from participants import martin, filip
 
 class AI:
   def __init__(self):
     self.fields = [['']]
     self.height = 1
     self.width = 1
-    
+
   def is_free(self, row, col, direction=None):
     if direction == LEFT: col -= 1
     elif direction == UP: row -= 1
@@ -43,36 +42,13 @@ class AI:
           food_row, food_col = i, j
         if fields[i][j] == 'h':
           head_row, head_col = i, j
-    print(fields)
-    self.participants_counter(fields)
-    if self.participants_counter == "evade":
-      if self.is_free(head_row, head_col, UP):
-        return UP
-      elif self.is_free(head_row, head_col, LEFT):
-        return LEFT
-      elif self.is_free(head_row, head_col, DOWN):
-        return DOWN
-      elif self.is_free(head_row, head_col, RIGHT):
-        return RIGHT
-      print('PANIC!!!')
+    if food_row < head_row and self.is_free(head_row, head_col, UP):
+      return UP
+    elif food_col < head_col and self.is_free(head_row, head_col, LEFT):
       return LEFT
-    else:
-      if food_row < head_row and self.is_free(head_row, head_col, UP):
-        return UP
-      elif food_col < head_col and self.is_free(head_row, head_col, LEFT):
-        return LEFT
-      elif food_row > head_row and self.is_free(head_row, head_col, DOWN):
-        return DOWN
-      elif food_col > head_col and self.is_free(head_row, head_col, RIGHT):
-        return RIGHT
-      print('PANIC!!!')
-      return LEFT
-  def participants_counter(self,fields):
-    remaining = 0
-    for x in fields:
-      if x[0] == "0":
-        remaining+=1
-    if remaining > 2:
-      return "evade"
-    else:
-      return "go"
+    elif food_row > head_row and self.is_free(head_row, head_col, DOWN):
+      return DOWN
+    elif food_col > head_col and self.is_free(head_row, head_col, RIGHT):
+      return RIGHT
+    print('PANIC!!!')
+    return LEFT
