@@ -13,6 +13,10 @@ class Board:
     self.food = []
     self.create_food()
     self.turn_number = 0
+    self.game_ended = False
+
+  def end_game(self):
+    self.game_ended = True
 
   def add_snake(self, snake):
     self.snakes.append(snake)
@@ -27,14 +31,13 @@ class Board:
     print(f'new food at {(row, col)}')
 
   def evaluate_state(self):
-    self.game_ended = False
     for snake in self.snakes:
-      if (snake.points < -10):
+      if (snake.points < -30):
         print(f'Player {snake.name} lost because they are below -30 points')
         self.snakes.remove(snake)
         snake.death()
         self.dead.append(snake)
-      if (snake.points > 10):
+      if (snake.points > 30):
         print(f'Game ended because {snake.name} reached 30 points.')
         self.game_ended = True
     if (len(self.snakes) == 0):
@@ -50,11 +53,18 @@ class Board:
     file_name = 'results/result' + str(datetime.now().strftime('%Y-%m-%d_%H_%M_%S')) + '.txt'
     with open(file_name,'w') as file:
       file.write(file_name + '\n')
-      for snake in self.dead:
-        file.write(str(snake.name) + ': ' + str(snake.points) + '\n')
-      for snake in self.snakes:
-        file.write(str(snake.name) + ': ' + str(snake.points) + '\n')
+      sorted_snakes = sorted(
+        self.snakes,
+        key = lambda snake: -snake.points, # sort decreasing by points
+      )
+      counter = 1
+      for snake in sorted_snakes:
+        file.write(str(counter) + '. ' + str(snake.name) + ': ' + str(snake.points) + '\n')
+        counter += 1
         print(str(snake.name) + ': ' + str(snake.points))
+      for i, snake in enumerate(reversed(self.dead)):
+        file.write(str(counter) + '. ' + str(snake.name) + ': dead. \n')
+        counter += 1
       print('Konec hry. Vysledek zapsan do ' + file_name)
 
   def update(self):

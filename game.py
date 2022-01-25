@@ -17,11 +17,29 @@ class SnakeGame:
       bg = '#000000'
     )
     self.canvas.pack()
+    self.speed_button = Button(
+      self.window,
+      command=self.speed_up,
+      text='Turbo',
+    )
+    self.speed_button.pack()
+    self.end_button = Button(
+      self.window,
+      command=self.end_game,
+      text='End',
+    )
+    self.end_button.pack()
     self.keys = []
     self.window.bind('<KeyPress>', self.key_press)
     self.window.bind('<KeyRelease>', self.key_release)
 
     self.board = Board(height, width)
+
+  def speed_up(self):
+     self.delay = 10
+
+  def end_game(self):
+     self.board.end_game()
 
   def start(self):
     print('Starting game')
