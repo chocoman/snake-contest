@@ -22,6 +22,22 @@ class AI:
     if self.fields[row][col] == '': return True
     if self.fields[row][col] == 'f': return True
     else: return False
+    
+  def is_2free(self, row, col, direction=None):
+    if direction == LEFT: col -= 2
+    elif direction == UP: row -= 2
+    elif direction == RIGHT: col += 2
+    elif direction == DOWN: row += 2
+
+    if row >= self.height: return False
+    if row < 0: return False
+    if col >= self.width: return False
+    if col < 0: return False
+
+    if self.fields[row][col] == '': return True
+    if self.fields[row][col] == 'f': return True
+    else: return False
+
 
   def not_free(self, row, col, direction=None):
     if direction == LEFT: col -= 1
@@ -77,36 +93,34 @@ class AI:
         #circle(head_row, head_col)
         #time_sec -= 1
 
-    #základní movement
-    if food_row < head_row and self.is_free(head_row, head_col, UP):
+    if food_row < head_row and self.is_free(head_row, head_col, UP) and self.is_free(head_row, head_col, RIGHT) and self.is_free(head_row, head_col, LEFT):
       return UP
-    elif food_col < head_col and self.is_free(head_row, head_col, LEFT):
+    elif food_col < head_col and self.is_free(head_row, head_col, LEFT) and self.is_free(head_row, head_col, UP) and self.is_free(head_row, head_col, DOWN):
       return LEFT
-    elif food_row > head_row and self.is_free(head_row, head_col, DOWN):
+    elif food_row > head_row and self.is_free(head_row, head_col, DOWN) and self.is_free(head_row, head_col, RIGHT) and self.is_free(head_row, head_col, LEFT):
       return DOWN
-    elif food_col > head_col and self.is_free(head_row, head_col, RIGHT):
+    elif food_col > head_col and self.is_free(head_row, head_col, RIGHT) and self.is_free(head_row, head_col, UP) and self.is_free(head_row, head_col, DOWN):
       return RIGHT
-    #když není volná pozice, zbytečně se neoddaluje
-    elif food_row < head_row and self.not_free(head_row, head_col, UP):
-      if self.is_free(head_row, head_col, LEFT):
-        return LEFT
-      elif self.is_free(head_row, head_col, RIGHT):
-        return RIGHT
-    elif food_col < head_col and self.not_free(head_row, head_col, LEFT):
-      if self.is_free(head_row, head_col, UP):
-        return UP
-      elif self.is_free(head_row, head_col, DOWN):
-        return DOWN
-    elif food_row > head_row and self.not_free(head_row, head_col, DOWN):
-      if self.is_free(head_row, head_col, LEFT):
-        return LEFT
-      elif self.is_free(head_row, head_col, RIGHT):
-        return RIGHT
-    elif food_col > head_col and self.not_free(head_row, head_col, RIGHT):
-      if self.is_free(head_row, head_col, UP):
-        return UP
-      elif self.is_free(head_row, head_col, DOWN):
-        return DOWN
+      
+    elif self.is_free(head_row, head_col, UP) and self.is_free(head_row, head_col, RIGHT) and self.is_free(head_row, head_col, LEFT):
+      return UP
+    elif self.is_free(head_row, head_col, LEFT) and self.is_free(head_row, head_col, UP) and self.is_free(head_row, head_col, DOWN):
+      return LEFT
+    elif self.is_free(head_row, head_col, DOWN) and self.is_free(head_row, head_col, RIGHT) and self.is_free(head_row, head_col, LEFT):
+      return DOWN
+    elif self.is_free(head_row, head_col, RIGHT) and self.is_free(head_row, head_col, UP) and self.is_free(head_row, head_col, DOWN):
+      return RIGHT
+
+    #základní movement
+    elif self.is_free(head_row, head_col, UP) and self.is_2free(head_row, head_col, UP):
+      return UP
+    elif self.is_free(head_row, head_col, LEFT) and self.is_2free(head_row, head_col, LEFT):
+      return LEFT
+    elif self.is_free(head_row, head_col, DOWN) and self.is_2free(head_row, head_col, DOWN):
+      return DOWN
+    elif self.is_free(head_row, head_col, RIGHT) and self.is_2free(head_row, head_col, RIGHT):
+      return RIGHT
+        
     #když nic z toho nevyjde, utéct
     elif self.is_free(head_row, head_col, UP):
       return UP

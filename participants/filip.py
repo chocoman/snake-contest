@@ -43,36 +43,45 @@ class AI:
           food_row, food_col = i, j
         if fields[i][j] == 'h':
           head_row, head_col = i, j
-    print(fields)
     self.participants_counter(fields)
     if self.participants_counter == "evade":
-      if self.is_free(head_row, head_col, UP):
+      if self.is_free(head_row, head_col, UP) and self.is_free (head_row+1, head_col+1, UP):
         return UP
-      elif self.is_free(head_row, head_col, LEFT):
+      elif self.is_free(head_row, head_col, LEFT) and self.is_free (head_row+1, head_col+1, LEFT):
         return LEFT
-      elif self.is_free(head_row, head_col, DOWN):
+      elif self.is_free(head_row, head_col, DOWN) and self.is_free (head_row+1, head_col+1, DOWN):
         return DOWN
-      elif self.is_free(head_row, head_col, RIGHT):
+      elif self.is_free(head_row, head_col, RIGHT) and self.is_free (head_row+1, head_col+1, RIGHT):
         return RIGHT
       print('PANIC!!!')
       return LEFT
     else:
-      if food_row < head_row and self.is_free(head_row, head_col, UP):
+      if self.is_free(head_row, head_col, UP) and self.is_free (head_row-1, head_col, UP):
         return UP
-      elif food_col < head_col and self.is_free(head_row, head_col, LEFT):
+      elif  self.is_free(head_row, head_col, LEFT) and self.is_free (head_row, head_col-1, LEFT):
         return LEFT
-      elif food_row > head_row and self.is_free(head_row, head_col, DOWN):
+      elif  self.is_free(head_row, head_col, DOWN) and self.is_free (head_row+1, head_col, DOWN):
         return DOWN
-      elif food_col > head_col and self.is_free(head_row, head_col, RIGHT):
+      elif self.is_free(head_row, head_col, RIGHT) and self.is_free (head_row, head_col+1, RIGHT):
         return RIGHT
       print('PANIC!!!')
       return LEFT
   def participants_counter(self,fields):
     remaining = 0
-    for x in fields:
-      if x[0] == "0":
-        remaining+=1
+    participants_list = ["Filip","Test","Trubi"]
+    self.height = len(fields)
+    self.width = len(fields[0])
+    for i in range(self.height):
+      for j in range(self.width):
+        for x in participants_list:
+          if fields[i][j] == "0"+ x:
+            remaining =+1
     if remaining > 2:
       return "evade"
     else:
       return "go"
+  """def self_control(self,fields, height, width):
+    body = []
+    for i in range (self.height):
+      for j in range (self.width):
+        if fields[i][j]"""

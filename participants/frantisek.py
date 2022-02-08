@@ -43,6 +43,7 @@ class AI:
           food_row, food_col = i, j
         if fields[i][j] == 'h':
           head_row, head_col = i, j
+          
     if food_row < head_row and self.is_free(head_row, head_col, UP):
       return UP
     elif food_col < head_col and self.is_free(head_row, head_col, LEFT):
@@ -52,14 +53,15 @@ class AI:
     elif food_col > head_col and self.is_free(head_row, head_col, RIGHT):
       return RIGHT
 
-    if self.is_free(head_row+1, head_col):
+    if self.is_free(head_row-1, head_col):
       return UP
-    elif self.is_free(head_row, head_col+1):
-      return RIGHT
     elif self.is_free(head_row, head_col-1):
       return LEFT
-    elif self.is_free(head_row-1, head_col):
+    elif self.is_free(head_row+1, head_col):
       return DOWN
+    elif self.is_free(head_row, head_col+1):
+      return RIGHT
+      
 
     print('PANIC!!!')
     return LEFT

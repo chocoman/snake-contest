@@ -30,7 +30,43 @@ class AI:
   # Tuto funkci můžete libovolně upravit. Jenom zachovejte její název a vstupní parametry
   # a vracejte jedině jednu z hodnot LEFT, UP, RIGHT, DOWN
   # Můžete přidat jakékoli další funkce.
-  
+  def find_head(self, fields):
+    self.fields = fields
+    self.height = len(fields)
+    self.width = len(fields[0])
+    head_row, head_col = 0, 0
+    food_row, food_col = 0, 0
+    friend_head_row, friend_head_col = 0, 0
+    players_number = 0
+    for i in range(self.height):
+      for j in range(self.width):
+        if fields[i][j] == 'f':
+          food_row, food_col = i, j
+        if fields[i][j] == 'h':
+          head_row, head_col = i, j
+        if "1-" in fields [i][j]:
+          friend_head_row, friend_head_col = i, j
+          
+
+    
+    if friend_head_row == head_row -2 and friend_head_col == head_col -1 and self.is_free(head_row, head_col, LEFT):
+           return LEFT 
+    if friend_head_row == head_row -1 and friend_head_col == head_col -2 and self.is_free(head_row, head_col, DOWN):
+           return DOWN        
+    if friend_head_row == head_row +2 and friend_head_col == head_col +1 and self.is_free(head_row, head_col, RIGHT):
+           return RIGHT
+    if friend_head_row == head_row +1 and friend_head_col == head_col +2 and self.is_free(head_row, head_col, UP):
+           return UP 
+           
+    if friend_head_row == head_row -2 and friend_head_col == head_col +1 and self.is_free(head_row, head_col, RIGHT):
+           return RIGHT
+    if friend_head_row == head_row -1 and friend_head_col == head_col +2 and self.is_free(head_row, head_col, DOWN):
+           return DOWN        
+    if friend_head_row == head_row +2 and friend_head_col == head_col -1 and self.is_free(head_row, head_col, LEFT):
+           return LEFT
+    if friend_head_row == head_row +1 and friend_head_col == head_col -2 and self.is_free(head_row, head_col, UP):
+           return UP  
+
   def decide_direction(self, fields):
     self.fields = fields
     self.height = len(fields)
@@ -44,19 +80,18 @@ class AI:
         if fields[i][j] == 'h':
           head_row, head_col = i, j
           
-          
-          
-    if food_row < head_row and self.is_free(head_row, head_col, UP):
+         
+    """if food_row < head_row and self.is_free(head_row, head_col, UP):
       return UP
     elif food_col < head_col and self.is_free(head_row, head_col, LEFT):
       return LEFT
     elif food_row > head_row and self.is_free(head_row, head_col, DOWN):
       return DOWN
     elif food_col > head_col and self.is_free(head_row, head_col, RIGHT):
-      return RIGHT
+      return RIGHT"""
       
       
-    elif self.is_free(head_row, head_col, UP):
+    if self.is_free(head_row, head_col, UP):
       return UP
     elif self.is_free(head_row, head_col, LEFT):
       return LEFT
@@ -65,6 +100,8 @@ class AI:
     elif self.is_free(head_row, head_col, RIGHT):
       return RIGHT
       
+      
+
       
     print('PANIC!!!')
     return LEFT

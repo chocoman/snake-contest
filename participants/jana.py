@@ -6,11 +6,11 @@ class AI:
     self.height = 1
     self.width = 1
 
-  def is_free(self, row, col, direction=None):
-    if direction == LEFT: col -= 1
-    elif direction == UP: row -= 1
-    elif direction == RIGHT: col += 1
-    elif direction == DOWN: row += 1
+  def is_free(self, row, col, direction=None, distance=1):
+    if direction == LEFT: col -= distance
+    elif direction == UP: row -= distance
+    elif direction == RIGHT: col += distance
+    elif direction == DOWN: row += distance
 
     if row >= self.height: return False
     if row < 0: return False
@@ -21,24 +21,13 @@ class AI:
     if self.fields[row][col] == 'f': return True
     else: return False
 
-  def is_free_further(self, row, col, direction=None):
-    if self.is_free(row, col, direction) == False:
-      return False
+  def is_free_further(self, row, col, direction=None, distance=1):
+    x = 1
+    for i in range(1, distance):
+      if self.is_free(row, col, direction, i): x += 1
 
-    else:
-      if direction == LEFT: col -= 2
-      elif direction == UP: row -= 2
-      elif direction == RIGHT: col += 2
-      elif direction == DOWN: row += 2
-
-      if row >= self.height: return False
-      if row < 0: return False
-      if col >= self.width: return False
-      if col < 0: return False
-
-      if self.fields[row][col] == '': return True
-      if self.fields[row][col] == 'f': return True
-      else: return False
+    if x == distance: return True
+    else: return False
 
   def check_food_next_to_wall(self, width, height, row, col, direction=None):
     width += 1
@@ -60,12 +49,9 @@ class AI:
     elif direction == RIGHT: col += 1
     elif direction == DOWN: row += 1
 
-    if row >= self.height: return False
-    if row < 0: return False
-    if col >= self.width: return False
-    if col < 0: return False
-    if self.fields[row] == -1 or width: return True
-    if self.fields[col] == -1 or height: return True
+    if self.fields[row] == -1 or self.fields[row] == width: return True
+    if self.fields[col] == -1 or self.fields[col] == height: return True
+    return False
 
 
 
@@ -92,27 +78,24 @@ class AI:
         if fields[i][j] == 'h':
           head_row, head_col = i, j
 
-    if food_col < head_col and self.is_free_further(head_row, head_col, LEFT):
-      return LEFT
-    elif food_row < head_row and self.is_free_further(head_row, head_col, UP):
-      return UP
-    elif food_col > head_col and self.is_free_further(head_row, head_col, RIGHT):
-      return RIGHT
-    elif food_row > head_row and self.is_free_further(head_row, head_col, DOWN):
-      return DOWN
-
-    if food_col < head_col:
-      if self.check_food_next_to_wall(self.width, self.height, head_row, head_col, LEFT):
-        return LEFT
-    if food_row < head_row:
-      if self.check_food_next_to_wall(self.width, self.height, head_row, head_col, UP):
-        return UP
-    if food_col > head_col:
-      if self.check_food_next_to_wall(self.width, self.height, head_row, head_col, RIGHT):
-        return RIGHT
-    if food_row > head_row:
-      if self.check_food_next_to_wall(self.width, self.height, head_row, head_col, DOWN):
-        return DOWN
-
+    for a in range(4, 1, -1):
+      if food_col < head_col:
+        if self.is_free_further(head_row, head_col, LEFT, a) or self.check_food_next_to_wall(self.width, self.height, head_row, head_col, LEFT):
+          return LEFT
+      if food_row < head_row:
+        if self.is_free_further(head_row, head_col, UP, a) or self.check_food_next_to_wall(self.width, self.height, head_row, head_col, UP):
+          return UP
+      if food_col > head_col:
+        if self.is_free_further(head_row, head_col, RIGHT, a) or self.check_food_next_to_wall(self.width, self.height, head_row, head_col, RIGHT):
+          return RIGHT
+      if food_row > head_row:
+        if self.is_free_further(head_row, head_col, DOWN, a) or self.check_food_next_to_wall(self.width, self.height, head_row, head_col, DOWN):
+          return DOWN
     
+    for b in range(3, 1, -1):
+      if self.is_free_further(head_row, head_col, LEFT, b): return LEFT
+      if self.is_free_further(head_row, head_col, UP, b): return UP
+      if self.is_free_further(head_row, head_col, RIGHT, b): return RIGHT
+      if self.is_free_further(head_row, head_col, DOWN, b): return DOWN
+
     return self.random_safe_direction(head_row, head_col)
